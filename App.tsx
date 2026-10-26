@@ -160,6 +160,13 @@ const App: React.FC = () => {
   const [snippetSearch, setSnippetSearch] = useState('');
   const [editingSnippet, setEditingSnippet] = useState<Snippet | null>(null);
 
+  // API Settings State
+  const [showApiSettings, setShowApiSettings] = useState(false);
+  const [apiType, setApiType] = useState<'gemini' | 'openai'>(() => (localStorage.getItem('ai_api_type') as 'gemini' | 'openai') || 'gemini');
+  const [apiKey, setApiKey] = useState(() => localStorage.getItem('ai_api_key') || '');
+  const [baseUrl, setBaseUrl] = useState(() => localStorage.getItem('ai_base_url') || '');
+  const [model, setModel] = useState(() => localStorage.getItem('ai_model') || '');
+
   // Preview State
   const [isPreviewLoading, setIsPreviewLoading] = useState(false);
   
@@ -638,6 +645,16 @@ const App: React.FC = () => {
     }
   };
 
+  // API Settings
+  const saveApiSettings = () => {
+    localStorage.setItem('ai_api_type', apiType);
+    localStorage.setItem('ai_api_key', apiKey);
+    localStorage.setItem('ai_base_url', baseUrl);
+    localStorage.setItem('ai_model', model);
+    setShowApiSettings(false);
+    showToast('API settings saved successfully', 'success');
+  };
+
   // Zoom
   const handleZoomIn = () => setFontSize(prev => Math.min(prev + 2, 32));
   const handleZoomOut = () => setFontSize(prev => Math.max(prev - 2, 10));
@@ -816,6 +833,9 @@ const App: React.FC = () => {
              </div>
 
              <div className="flex items-center gap-1 overflow-x-auto no-scrollbar pl-2">
+                <button onClick={() => setShowApiSettings(true)} className="hidden md:block p-1.5 text-gray-500 hover:text-gray-900 dark:hover:text-white rounded hover:bg-gray-100 dark:hover:bg-slate-700" title="API Settings">
+                  <Settings className="w-3.5 h-3.5" />
+                </button>
                 <button onClick={() => setShowSnippetManager(true)} className="hidden md:block p-1.5 text-gray-500 hover:text-gray-900 dark:hover:text-white rounded hover:bg-gray-100 dark:hover:bg-slate-700" title={t.manageSnippets}>
                   <Scissors className="w-3.5 h-3.5" />
                 </button>
@@ -1249,6 +1269,111 @@ const App: React.FC = () => {
              <div className="p-4 border-t border-gray-200 dark:border-dark-border bg-gray-50 dark:bg-dark-surface flex justify-end">
                 <Button onClick={() => setShowValidateModal(false)}>{t.close}</Button>
              </div>
+          </div>
+        </div>
+      )}
+
+      {/* API Settings Modal */}
+      {showApiSettings && (
+        <div className="absolute inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-dark-surface rounded-xl shadow-2xl w-full max-w-lg flex flex-col border border-gray-200 dark:border-dark-border">
+            <div className="p-4 border-b border-gray-200 dark:border-dark-border flex justify-between items-center bg-gray-50 dark:bg-dark-surface">
+              <h2 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                <Settings className="w-5 h-5 text-brand-500" />
+                API Settings
+              </h2>
+              <button onClick={() => setShowApiSettings(false)} className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  API Provider *
+                </label>
+                <select
+                  className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-dark-border bg-white dark:bg-dark-bg text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+                  value={apiType}
+                  onChange={(e) => setApiType(e.target.value as 'gemini' | 'openai')}
+                >
+                  <option value="gemini">Google Gemini</option>
+                  <option value="openai">OpenAI Compatible API</option>
+                </select>
+                <p className="mt-1 text-xs text-gray-500">
+                  Choose your AI provider
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  API Key *
+                </label>
+                <input
+                  type="password"
+                  className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-dark-border bg-white dark:bg-dark-bg text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+                  placeholder={apiType === 'gemini' ? 'Enter your Gemini API key' : 'Enter your OpenAI API key'}
+                  value={apiKey}
+                  onChange={(e) => setApiKey(e.target.value)}
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  {apiType === 'gemini' ? (
+                    <>Get your key from{' '}
+                      <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer" className="text-brand-500 hover:underline">
+                        Google AI Studio
+                      </a>
+                    </>
+                  ) : (
+                    'Required for AI features. Use any OpenAI-compatible API key.'
+                  )}
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  API Base URL {apiType === 'gemini' ? '(Optional)' : '*'}
+                </label>
+                <input
+                  type="text"
+                  className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-dark-border bg-white dark:bg-dark-bg text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+                  placeholder={apiType === 'gemini' ? 'https://generativelanguage.googleapis.com' : 'https://api.openai.com/v1'}
+                  value={baseUrl}
+                  onChange={(e) => setBaseUrl(e.target.value)}
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  {apiType === 'gemini'
+                    ? 'Leave empty to use default Gemini endpoint'
+                    : 'Enter your OpenAI-compatible API endpoint (e.g., https://api.openai.com/v1)'}
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Model Name {apiType === 'openai' ? '*' : '(Optional)'}
+                </label>
+                <input
+                  type="text"
+                  className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-dark-border bg-white dark:bg-dark-bg text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+                  placeholder={apiType === 'gemini' ? 'gemini-2.0-flash-exp' : 'gpt-3.5-turbo'}
+                  value={model}
+                  onChange={(e) => setModel(e.target.value)}
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  {apiType === 'gemini'
+                    ? 'Default: gemini-2.0-flash-exp'
+                    : 'Required: e.g., gpt-3.5-turbo, gpt-4, claude-3-opus-20240229'}
+                </p>
+              </div>
+            </div>
+
+            <div className="p-4 border-t border-gray-200 dark:border-dark-border bg-gray-50 dark:bg-dark-surface flex justify-end gap-2">
+              <Button variant="secondary" onClick={() => setShowApiSettings(false)}>
+                Cancel
+              </Button>
+              <Button variant="primary" onClick={saveApiSettings}>
+                Save Settings
+              </Button>
+            </div>
           </div>
         </div>
       )}
